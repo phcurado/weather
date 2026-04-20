@@ -65,6 +65,8 @@ All fields optional. Defaults: no default city, metric, 10m cache TTL.
 set -g status-right '#(command -v weather >/dev/null 2>&1 && weather widget || echo "")  %I:%M %p  %a %b %d'
 ```
 
+![tmux status-line widget](images/tmux-widget.png)
+
 `widget` is designed to fail silently — the segment renders empty if the binary is missing or the network is down. It emits tmux format strings (`#[fg=...]`) so tmux colorizes the glyph natively. Requires a Nerd Font patched terminal font.
 
 ## Cache
