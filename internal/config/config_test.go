@@ -15,8 +15,8 @@ func TestLoad_Defaults_NoFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() err = %v", err)
 	}
-	if cfg.DefaultCity != "" {
-		t.Errorf("DefaultCity = %q; want empty", cfg.DefaultCity)
+	if cfg.City != "" {
+		t.Errorf("City = %q; want empty", cfg.City)
 	}
 	if cfg.Units != "metric" {
 		t.Errorf("Units = %q; want metric", cfg.Units)
@@ -35,9 +35,9 @@ func TestLoad_ParsesFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := `
-default_city = "Tallinn"
-units        = "imperial"
-cache_ttl    = "30s"
+city      = "Tallinn"
+units     = "imperial"
+cache_ttl = "30s"
 `
 	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
@@ -47,8 +47,8 @@ cache_ttl    = "30s"
 	if err != nil {
 		t.Fatalf("Load() err = %v", err)
 	}
-	if cfg.DefaultCity != "Tallinn" {
-		t.Errorf("DefaultCity = %q", cfg.DefaultCity)
+	if cfg.City != "Tallinn" {
+		t.Errorf("City = %q", cfg.City)
 	}
 	if cfg.Units != "imperial" {
 		t.Errorf("Units = %q", cfg.Units)

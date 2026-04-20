@@ -28,10 +28,10 @@ func resolve(cityArg string, warnTo io.Writer) (resolved, error) {
 
 	city := cityArg
 	if city == "" {
-		city = cfg.DefaultCity
+		city = cfg.City
 	}
 	if city == "" {
-		return resolved{Config: cfg}, errors.New("no city provided and no default_city in config")
+		return resolved{Config: cfg}, errors.New("no city provided: pass as arg or set `city` in config")
 	}
 
 	c := cache.New(cfg.CacheTTL)

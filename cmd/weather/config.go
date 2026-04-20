@@ -16,10 +16,10 @@ func newConfigCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("path         %s\n", config.Path())
-			fmt.Printf("default_city %s\n", cfg.DefaultCity)
-			fmt.Printf("units        %s\n", cfg.Units)
-			fmt.Printf("cache_ttl    %s\n", cfg.CacheTTL)
+			fmt.Printf("path      %s\n", config.Path())
+			fmt.Printf("city      %s\n", cfg.City)
+			fmt.Printf("units     %s\n", cfg.Units)
+			fmt.Printf("cache_ttl %s\n", cfg.CacheTTL)
 			return nil
 		},
 	}

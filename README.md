@@ -58,12 +58,12 @@ Flags:
 Path: `$XDG_CONFIG_HOME/weather/config.toml` (fallback `~/.config/weather/config.toml`).
 
 ```toml
-default_city = "Tallinn"
-units        = "metric"   # "metric" | "imperial"
-cache_ttl    = "10m"
+city      = "Tallinn"
+units     = "metric"   # "metric" | "imperial"
+cache_ttl = "10m"
 ```
 
-All fields optional. Defaults: no default city, metric, 10m cache TTL.
+All fields optional. Defaults: no city, metric, 10m cache TTL.
 
 ## tmux
 

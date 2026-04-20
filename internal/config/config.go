@@ -12,9 +12,9 @@ import (
 )
 
 type Config struct {
-	DefaultCity string        `toml:"default_city"`
-	Units       string        `toml:"units"`
-	CacheTTL    time.Duration `toml:"-"`
+	City     string        `toml:"city"`
+	Units    string        `toml:"units"`
+	CacheTTL time.Duration `toml:"-"`
 
 	RawCacheTTL string `toml:"cache_ttl"`
 }
