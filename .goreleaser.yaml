@@ -1,0 +1,32 @@
+version: 2
+
+project_name: weather
+
+builds:
+  - id: weather
+    main: ./cmd/weather
+    binary: weather
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+
+archives:
+  - id: weather
+    name_template: "weather_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: phcurado
+    name: weather
+  prerelease: auto
