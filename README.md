@@ -2,6 +2,8 @@
 
 Tiny Go CLI for current conditions, a 7-day forecast, hourly breakdown, and a tmux statusbar widget. Backed by [Open-Meteo](https://open-meteo.com). No API key.
 
+![weather CLI preview](images/preview.png)
+
 ## Install
 
 ```
@@ -22,7 +24,26 @@ weather config                # print resolved config + path
 
 If `[city]` is omitted, `default_city` from config is used.
 
+Multi-word cities need quoting:
+
+```
+weather "new york"
+weather "são paulo"
+```
+
+Ambiguous names resolve to the highest-ranked match from the Open-Meteo geocoder. To bias toward a specific place, append the country by its **full English name**:
+
+```
+weather "paris, United States"     # Paris, Texas — not Paris, France
+weather "valencia, Spain"
+```
+
+The geocoder only indexes cities/towns, not states or regions. `"rio grande do sul"` returns nothing — use its capital `"porto alegre"` instead.
+
+Geocoded coordinates are cached permanently in `$XDG_CACHE_HOME/weather/geocode/`, so a once-resolved city stays resolved. Delete the file (or the whole `geocode/` dir) to re-query.
+
 Flags:
+
 - `-H, --hourly` — show hourly view instead of the 7-day table
 - `-n, --hours N` — hours to show with hourly view (default 12)
 
