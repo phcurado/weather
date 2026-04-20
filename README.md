@@ -2,7 +2,13 @@
 
 Tiny Go CLI for current conditions, a 7-day forecast, hourly breakdown, and a tmux statusbar widget. Backed by [Open-Meteo](https://open-meteo.com). No API key.
 
-![weather CLI preview](images/preview.png)
+### Current + 7-day forecast
+
+![weather "New York"](images/weather-daily.png)
+
+### Hourly breakdown
+
+![weather tallinn --hourly](images/weather-hourly.png)
 
 ## Install
 
@@ -34,7 +40,7 @@ weather "são paulo"
 Ambiguous names resolve to the highest-ranked match from the Open-Meteo geocoder. To bias toward a specific place, append the country by its **full English name**:
 
 ```
-weather "paris, United States"     # Paris, Texas — not Paris, France
+weather "paris, United States"     # Paris, Texas
 weather "valencia, Spain"
 ```
 
