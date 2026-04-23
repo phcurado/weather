@@ -23,7 +23,8 @@ func buildBinary(t *testing.T) string {
 }
 
 const (
-	geocodeJSON  = `{"results":[{"name":"Tallinn","country":"Estonia","latitude":59.44,"longitude":24.75,"timezone":"Europe/Tallinn"}]}`
+	geocodeJSON = `{"results":[{"name":"Tallinn","country":"Estonia","latitude":59.44,"longitude":24.75,"timezone":"Europe/Tallinn"}]}`
+	ipGeoJSON   = `{"success":true,"city":"Lisbon","country":"Portugal","latitude":38.72,"longitude":-9.14,"timezone":{"id":"Europe/Lisbon"}}`
 	forecastJSON = `{
 		"current":{"temperature_2m":12,"apparent_temperature":10,"relative_humidity_2m":62,"wind_speed_10m":4,"wind_direction_10m":315,"weather_code":0},
 		"daily":{
@@ -47,6 +48,15 @@ func fakeServers(t *testing.T) (string, string) {
 	}))
 	t.Cleanup(f.Close)
 	return g.URL, f.URL
+}
+
+func fakeIPGeoServer(t *testing.T) string {
+	t.Helper()
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(ipGeoJSON))
+	}))
+	t.Cleanup(s.Close)
+	return s.URL
 }
 
 func runWeather(t *testing.T, bin string, env map[string]string, args ...string) (string, string, int) {
@@ -104,6 +114,40 @@ func TestCLI_Widget_NoCityNoConfig_EmptyExit0(t *testing.T) {
 	}
 	if stdout != "" {
 		t.Errorf("stdout = %q; want empty", stdout)
+	}
+}
+
+func TestCLI_Here(t *testing.T) {
+	bin := buildBinary(t)
+	geoBase, fcBase := fakeServers(t)
+	ipBase := fakeIPGeoServer(t)
+
+	stdout, stderr, code := runWeather(t, bin, map[string]string{
+		"WEATHER_GEOCODE_BASE":  geoBase,
+		"WEATHER_FORECAST_BASE": fcBase,
+		"WEATHER_IPGEO_BASE":    ipBase,
+		"XDG_CACHE_HOME":        t.TempDir(),
+		"XDG_CONFIG_HOME":       t.TempDir(),
+	}, "--here")
+	if code != 0 {
+		t.Fatalf("exit %d\nstdout: %s\nstderr: %s", code, stdout, stderr)
+	}
+	if !strings.Contains(stdout, "Lisbon") {
+		t.Errorf("stdout missing IP-located city:\n%s", stdout)
+	}
+}
+
+func TestCLI_Here_WithCityArg_Errors(t *testing.T) {
+	bin := buildBinary(t)
+	_, stderr, code := runWeather(t, bin, map[string]string{
+		"XDG_CACHE_HOME":  t.TempDir(),
+		"XDG_CONFIG_HOME": t.TempDir(),
+	}, "--here", "Tallinn")
+	if code == 0 {
+		t.Error("expected non-zero exit")
+	}
+	if !strings.Contains(stderr, "--here cannot be combined") {
+		t.Errorf("stderr = %q", stderr)
 	}
 }
 

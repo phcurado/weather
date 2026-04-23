@@ -24,11 +24,12 @@ Or: `go install github.com/phcurado/weather/cmd/weather@latest`.
 weather [city]                # summary + 7-day forecast
 weather [city] --hourly       # summary + next 12 hours
 weather [city] -n 24          # summary + N hours (implies hourly)
+weather --here                # use current location (IP geolocation)
 weather widget                # tmux status-line line
 weather config                # print resolved config + path
 ```
 
-If `[city]` is omitted, `default_city` from config is used.
+If `[city]` is omitted, `default_city` from config is used. Pass `--here` / `-l` to skip the config and resolve your current location from your public IP (via [ipwho.is](https://ipwho.is), no API key). Handy while travelling — the IP lookup is not cached, so the result follows you. Accuracy is city-level; a VPN or mobile carrier may place you nearby rather than exactly.
 
 Multi-word cities need quoting:
 
@@ -52,6 +53,7 @@ Flags:
 
 - `-H, --hourly` — show hourly view instead of the 7-day table
 - `-n, --hours N` — hours to show with hourly view (default 12)
+- `-l, --here` — resolve current location from public IP (overrides city arg/config)
 
 ## Configuration
 

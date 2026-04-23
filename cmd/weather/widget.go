@@ -10,7 +10,8 @@ import (
 )
 
 func newWidgetCmd() *cobra.Command {
-	return &cobra.Command{
+	var here bool
+	cmd := &cobra.Command{
 		Use:           "widget [city]",
 		Short:         "Single-line tmux widget",
 		Args:          cobra.MaximumNArgs(1),
@@ -21,7 +22,10 @@ func newWidgetCmd() *cobra.Command {
 			if len(args) == 1 {
 				city = args[0]
 			}
-			r, err := resolve(city, io.Discard)
+			if here && city != "" {
+				os.Exit(0)
+			}
+			r, err := resolve(city, here, io.Discard)
 			if err != nil {
 				os.Exit(0)
 			}
@@ -29,4 +33,6 @@ func newWidgetCmd() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.Flags().BoolVarP(&here, "here", "l", false, "use current location from IP geolocation")
+	return cmd
 }

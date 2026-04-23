@@ -20,6 +20,7 @@ func main() {
 	var (
 		hourly bool
 		hours  int
+		here   bool
 	)
 
 	root := &cobra.Command{
@@ -32,7 +33,10 @@ func main() {
 			if len(args) == 1 {
 				city = args[0]
 			}
-			r, err := resolve(city, os.Stderr)
+			if here && city != "" {
+				return fmt.Errorf("--here cannot be combined with a city argument")
+			}
+			r, err := resolve(city, here, os.Stderr)
 			if err != nil {
 				return err
 			}
@@ -48,6 +52,7 @@ func main() {
 	}
 	root.Flags().BoolVarP(&hourly, "hourly", "H", false, "show next-N-hours view instead of 7-day")
 	root.Flags().IntVarP(&hours, "hours", "n", 12, "hours to show with --hourly")
+	root.Flags().BoolVarP(&here, "here", "l", false, "use current location from IP geolocation")
 
 	root.AddCommand(newConfigCmd())
 	root.AddCommand(newWidgetCmd())

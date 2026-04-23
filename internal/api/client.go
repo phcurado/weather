@@ -22,12 +22,14 @@ const (
 type Options struct {
 	GeocodeBase  string
 	ForecastBase string
+	IPGeoBase    string
 	Timeout      time.Duration
 }
 
 type Client struct {
 	geocodeBase  string
 	forecastBase string
+	ipGeoBase    string
 	http         *http.Client
 }
 
@@ -38,12 +40,16 @@ func NewClient(o Options) *Client {
 	if o.ForecastBase == "" {
 		o.ForecastBase = DefaultForecastBase
 	}
+	if o.IPGeoBase == "" {
+		o.IPGeoBase = DefaultIPGeoBase
+	}
 	if o.Timeout == 0 {
 		o.Timeout = 5 * time.Second
 	}
 	return &Client{
 		geocodeBase:  o.GeocodeBase,
 		forecastBase: o.ForecastBase,
+		ipGeoBase:    o.IPGeoBase,
 		http:         &http.Client{Timeout: o.Timeout},
 	}
 }
