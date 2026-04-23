@@ -19,11 +19,15 @@ type resolved struct {
 
 // resolve loads config, picks a city, and returns weather — using cache when
 // possible and falling back to a stale cache entry on API failure.
-// When here is true, cityArg and the configured city are ignored and the
-// location is resolved from the caller's public IP (not cached, so it tracks
-// travel).
+//
+// Resolution order for location:
+//  1. cityArg (explicit)
+//  2. IP geolocation (default — tracks travel)
+//  3. cfg.City (fallback when IP lookup fails)
+//
+// IP geolocation results are not cached, so they follow you as you move.
 // warnTo receives user-facing warnings (pass io.Discard to silence).
-func resolve(cityArg string, here bool, warnTo io.Writer) (resolved, error) {
+func resolve(cityArg string, warnTo io.Writer) (resolved, error) {
 	cfg, err := config.Load()
 	if err != nil {
 		return resolved{}, err
@@ -37,31 +41,9 @@ func resolve(cityArg string, here bool, warnTo io.Writer) (resolved, error) {
 		Timeout:      5 * time.Second,
 	})
 
-	var coords api.Coords
-	if here {
-		coords, err = client.LocateByIP()
-		if err != nil {
-			return resolved{Config: cfg}, fmt.Errorf("locate by IP: %w", err)
-		}
-	} else {
-		city := cityArg
-		if city == "" {
-			city = cfg.City
-		}
-		if city == "" {
-			return resolved{Config: cfg}, errors.New("no city provided: pass as arg, set `city` in config, or use --here")
-		}
-
-		coords, err = c.Geocode(city)
-		if errors.Is(err, cache.ErrMiss) {
-			coords, err = client.Geocode(city)
-			if err != nil {
-				return resolved{Config: cfg}, err
-			}
-			_ = c.PutGeocode(city, coords)
-		} else if err != nil {
-			return resolved{Config: cfg}, err
-		}
+	coords, err := resolveCoords(cityArg, cfg, client, c, warnTo)
+	if err != nil {
+		return resolved{Config: cfg}, err
 	}
 
 	wx, fresh, cacheErr := c.Weather(coords)
@@ -80,4 +62,35 @@ func resolve(cityArg string, here bool, warnTo io.Writer) (resolved, error) {
 		return resolved{Weather: wx, Config: cfg}, nil
 	}
 	return resolved{Config: cfg}, apiErr
+}
+
+func resolveCoords(cityArg string, cfg config.Config, client *api.Client, c *cache.Cache, warnTo io.Writer) (api.Coords, error) {
+	if cityArg != "" {
+		return geocodeCity(cityArg, client, c)
+	}
+	coords, ipErr := client.LocateByIP()
+	if ipErr == nil {
+		return coords, nil
+	}
+	if cfg.City != "" {
+		_, _ = fmt.Fprintf(warnTo, "warning: IP geolocation failed (%v); falling back to configured city %q\n", ipErr, cfg.City)
+		return geocodeCity(cfg.City, client, c)
+	}
+	return api.Coords{}, fmt.Errorf("locate by IP: %w (set `city` in config as a fallback or pass a city arg)", ipErr)
+}
+
+func geocodeCity(city string, client *api.Client, c *cache.Cache) (api.Coords, error) {
+	coords, err := c.Geocode(city)
+	if errors.Is(err, cache.ErrMiss) {
+		coords, err = client.Geocode(city)
+		if err != nil {
+			return api.Coords{}, err
+		}
+		_ = c.PutGeocode(city, coords)
+		return coords, nil
+	}
+	if err != nil {
+		return api.Coords{}, err
+	}
+	return coords, nil
 }

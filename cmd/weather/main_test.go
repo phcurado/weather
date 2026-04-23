@@ -39,21 +39,21 @@ const (
 
 func fakeServers(t *testing.T) (string, string) {
 	t.Helper()
-	g := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	g := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(geocodeJSON))
 	}))
 	t.Cleanup(g.Close)
-	f := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	f := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(forecastJSON))
 	}))
 	t.Cleanup(f.Close)
 	return g.URL, f.URL
 }
 
-func fakeIPGeoServer(t *testing.T) string {
+func fakeIPGeoServer(t *testing.T, body string) string {
 	t.Helper()
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(ipGeoJSON))
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(body))
 	}))
 	t.Cleanup(s.Close)
 	return s.URL
@@ -81,7 +81,7 @@ func runWeather(t *testing.T, bin string, env map[string]string, args ...string)
 	return stdout.String(), stderr.String(), code
 }
 
-func TestCLI_Now(t *testing.T) {
+func TestCLI_ExplicitCity(t *testing.T) {
 	bin := buildBinary(t)
 	geoBase, fcBase := fakeServers(t)
 
@@ -99,28 +99,10 @@ func TestCLI_Now(t *testing.T) {
 	}
 }
 
-func TestCLI_Widget_NoCityNoConfig_EmptyExit0(t *testing.T) {
+func TestCLI_NoArg_UsesIPGeolocation(t *testing.T) {
 	bin := buildBinary(t)
 	geoBase, fcBase := fakeServers(t)
-
-	stdout, stderr, code := runWeather(t, bin, map[string]string{
-		"WEATHER_GEOCODE_BASE":  geoBase,
-		"WEATHER_FORECAST_BASE": fcBase,
-		"XDG_CACHE_HOME":        t.TempDir(),
-		"XDG_CONFIG_HOME":       t.TempDir(),
-	}, "widget")
-	if code != 0 {
-		t.Errorf("exit %d; want 0\nstderr: %s", code, stderr)
-	}
-	if stdout != "" {
-		t.Errorf("stdout = %q; want empty", stdout)
-	}
-}
-
-func TestCLI_Here(t *testing.T) {
-	bin := buildBinary(t)
-	geoBase, fcBase := fakeServers(t)
-	ipBase := fakeIPGeoServer(t)
+	ipBase := fakeIPGeoServer(t, ipGeoJSON)
 
 	stdout, stderr, code := runWeather(t, bin, map[string]string{
 		"WEATHER_GEOCODE_BASE":  geoBase,
@@ -128,7 +110,7 @@ func TestCLI_Here(t *testing.T) {
 		"WEATHER_IPGEO_BASE":    ipBase,
 		"XDG_CACHE_HOME":        t.TempDir(),
 		"XDG_CONFIG_HOME":       t.TempDir(),
-	}, "--here")
+	})
 	if code != 0 {
 		t.Fatalf("exit %d\nstdout: %s\nstderr: %s", code, stdout, stderr)
 	}
@@ -137,34 +119,73 @@ func TestCLI_Here(t *testing.T) {
 	}
 }
 
-func TestCLI_Here_WithCityArg_Errors(t *testing.T) {
+func TestCLI_IPFailure_FallsBackToConfigCity(t *testing.T) {
 	bin := buildBinary(t)
-	_, stderr, code := runWeather(t, bin, map[string]string{
-		"XDG_CACHE_HOME":  t.TempDir(),
-		"XDG_CONFIG_HOME": t.TempDir(),
-	}, "--here", "Tallinn")
-	if code == 0 {
-		t.Error("expected non-zero exit")
+	geoBase, fcBase := fakeServers(t)
+	ipBase := fakeIPGeoServer(t, `{"success":false}`)
+
+	cfgDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(cfgDir, "weather"), 0o755); err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(stderr, "--here cannot be combined") {
-		t.Errorf("stderr = %q", stderr)
+	if err := os.WriteFile(filepath.Join(cfgDir, "weather", "config.toml"), []byte(`city = "Tallinn"`+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, stderr, code := runWeather(t, bin, map[string]string{
+		"WEATHER_GEOCODE_BASE":  geoBase,
+		"WEATHER_FORECAST_BASE": fcBase,
+		"WEATHER_IPGEO_BASE":    ipBase,
+		"XDG_CACHE_HOME":        t.TempDir(),
+		"XDG_CONFIG_HOME":       cfgDir,
+	})
+	if code != 0 {
+		t.Fatalf("exit %d\nstdout: %s\nstderr: %s", code, stdout, stderr)
+	}
+	if !strings.Contains(stdout, "Tallinn") {
+		t.Errorf("stdout should use fallback city:\n%s", stdout)
+	}
+	if !strings.Contains(stderr, "falling back to configured city") {
+		t.Errorf("expected fallback warning on stderr; got: %q", stderr)
 	}
 }
 
-func TestCLI_Now_NoCityNoConfig_Exit1(t *testing.T) {
+func TestCLI_IPFailure_NoConfig_Exit1(t *testing.T) {
 	bin := buildBinary(t)
 	geoBase, fcBase := fakeServers(t)
+	ipBase := fakeIPGeoServer(t, `{"success":false}`)
 
 	_, stderr, code := runWeather(t, bin, map[string]string{
 		"WEATHER_GEOCODE_BASE":  geoBase,
 		"WEATHER_FORECAST_BASE": fcBase,
+		"WEATHER_IPGEO_BASE":    ipBase,
 		"XDG_CACHE_HOME":        t.TempDir(),
 		"XDG_CONFIG_HOME":       t.TempDir(),
 	})
 	if code == 0 {
 		t.Error("expected non-zero exit")
 	}
-	if !strings.Contains(stderr, "no city provided") {
+	if !strings.Contains(stderr, "locate by IP") {
 		t.Errorf("stderr = %q", stderr)
+	}
+}
+
+func TestCLI_Widget_NoNetwork_EmptyExit0(t *testing.T) {
+	bin := buildBinary(t)
+	geoBase, fcBase := fakeServers(t)
+	ipBase := fakeIPGeoServer(t, `{"success":false}`)
+
+	stdout, stderr, code := runWeather(t, bin, map[string]string{
+		"WEATHER_GEOCODE_BASE":  geoBase,
+		"WEATHER_FORECAST_BASE": fcBase,
+		"WEATHER_IPGEO_BASE":    ipBase,
+		"XDG_CACHE_HOME":        t.TempDir(),
+		"XDG_CONFIG_HOME":       t.TempDir(),
+	}, "widget")
+	if code != 0 {
+		t.Errorf("exit %d; want 0\nstderr: %s", code, stderr)
+	}
+	if stdout != "" {
+		t.Errorf("stdout = %q; want empty", stdout)
 	}
 }

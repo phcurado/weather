@@ -24,12 +24,13 @@ Or: `go install github.com/phcurado/weather/cmd/weather@latest`.
 weather [city]                # summary + 7-day forecast
 weather [city] --hourly       # summary + next 12 hours
 weather [city] -n 24          # summary + N hours (implies hourly)
-weather --here                # use current location (IP geolocation)
 weather widget                # tmux status-line line
 weather config                # print resolved config + path
 ```
 
-If `[city]` is omitted, `default_city` from config is used. Pass `--here` / `-l` to skip the config and resolve your current location from your public IP (via [ipwho.is](https://ipwho.is), no API key). Handy while travelling — the IP lookup is not cached, so the result follows you. Accuracy is city-level; a VPN or mobile carrier may place you nearby rather than exactly.
+If `[city]` is omitted, your current location is resolved from your public IP (via [ipwho.is](https://ipwho.is), no API key). The IP lookup is not cached, so the result follows you as you travel. Accuracy is city-level — a VPN or mobile carrier may place you nearby rather than exactly.
+
+If the IP lookup fails (no network, service blocked), `city` from config is used as a fallback.
 
 Multi-word cities need quoting:
 
@@ -53,19 +54,18 @@ Flags:
 
 - `-H, --hourly` — show hourly view instead of the 7-day table
 - `-n, --hours N` — hours to show with hourly view (default 12)
-- `-l, --here` — resolve current location from public IP (overrides city arg/config)
 
 ## Configuration
 
 Path: `$XDG_CONFIG_HOME/weather/config.toml` (fallback `~/.config/weather/config.toml`).
 
 ```toml
-city      = "Tallinn"
+city      = "Tallinn"  # optional fallback when IP geolocation fails
 units     = "metric"   # "metric" | "imperial"
 cache_ttl = "10m"
 ```
 
-All fields optional. Defaults: no city, metric, 10m cache TTL.
+All fields optional. Defaults: no city fallback, metric, 10m cache TTL.
 
 ## tmux
 
