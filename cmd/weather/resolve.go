@@ -76,7 +76,7 @@ func resolve(cityArg string, here bool, warnTo io.Writer) (resolved, error) {
 	}
 
 	if cacheErr == nil {
-		fmt.Fprintf(warnTo, "warning: API failed (%v); using cached data\n", apiErr)
+		_, _ = fmt.Fprintf(warnTo, "warning: API failed (%v); using cached data\n", apiErr)
 		return resolved{Weather: wx, Config: cfg}, nil
 	}
 	return resolved{Config: cfg}, apiErr

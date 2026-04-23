@@ -23,8 +23,8 @@ func buildBinary(t *testing.T) string {
 }
 
 const (
-	geocodeJSON = `{"results":[{"name":"Tallinn","country":"Estonia","latitude":59.44,"longitude":24.75,"timezone":"Europe/Tallinn"}]}`
-	ipGeoJSON   = `{"success":true,"city":"Lisbon","country":"Portugal","latitude":38.72,"longitude":-9.14,"timezone":{"id":"Europe/Lisbon"}}`
+	geocodeJSON  = `{"results":[{"name":"Tallinn","country":"Estonia","latitude":59.44,"longitude":24.75,"timezone":"Europe/Tallinn"}]}`
+	ipGeoJSON    = `{"success":true,"city":"Lisbon","country":"Portugal","latitude":38.72,"longitude":-9.14,"timezone":{"id":"Europe/Lisbon"}}`
 	forecastJSON = `{
 		"current":{"temperature_2m":12,"apparent_temperature":10,"relative_humidity_2m":62,"wind_speed_10m":4,"wind_direction_10m":315,"weather_code":0},
 		"daily":{
