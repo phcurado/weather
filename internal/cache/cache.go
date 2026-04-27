@@ -111,3 +111,23 @@ func (c *Cache) Weather(coords api.Coords) (api.Weather, bool, error) {
 func (c *Cache) PutWeather(coords api.Coords, wx api.Weather) error {
 	return c.write(c.pathFor("weather", coords.Lat, coords.Lon), wx)
 }
+
+// IPGeo returns the cached IP-located coordinates if still within TTL,
+// else ErrMiss. Single-entry cache (no key) — there is only one "current
+// location" per machine.
+func (c *Cache) IPGeo() (api.Coords, error) {
+	var out api.Coords
+	fetched, err := c.read(c.pathFor("ipgeo"), &out)
+	if err != nil {
+		return api.Coords{}, err
+	}
+	if time.Since(fetched) > c.TTL {
+		return api.Coords{}, ErrMiss
+	}
+	return out, nil
+}
+
+// PutIPGeo stores the most recent IP geolocation result.
+func (c *Cache) PutIPGeo(coords api.Coords) error {
+	return c.write(c.pathFor("ipgeo"), coords)
+}

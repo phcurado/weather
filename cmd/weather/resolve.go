@@ -68,8 +68,12 @@ func resolveCoords(cityArg string, cfg config.Config, client *api.Client, c *cac
 	if cityArg != "" {
 		return geocodeCity(cityArg, client, c)
 	}
+	if coords, err := c.IPGeo(); err == nil {
+		return coords, nil
+	}
 	coords, ipErr := client.LocateByIP()
 	if ipErr == nil {
+		_ = c.PutIPGeo(coords)
 		return coords, nil
 	}
 	if cfg.City != "" {

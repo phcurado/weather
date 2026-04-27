@@ -67,7 +67,7 @@ func (c *Client) getJSON(raw string, q url.Values, out any) error {
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("open-meteo %s: %s", resp.Status, string(body))
+		return fmt.Errorf("%s %s: %s", u.Host, resp.Status, string(body))
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
 }

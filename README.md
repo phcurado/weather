@@ -28,7 +28,7 @@ weather widget                # tmux status-line line
 weather config                # print resolved config + path
 ```
 
-If `[city]` is omitted, your current location is resolved from your public IP (via [ipwho.is](https://ipwho.is), no API key). The IP lookup is not cached, so the result follows you as you travel. Accuracy is city-level — a VPN or mobile carrier may place you nearby rather than exactly.
+If `[city]` is omitted, your current location is resolved from your public IP (via [ipwho.is](https://ipwho.is), no API key). The lookup is cached with the same TTL as weather (default 10m), so a tmux widget polling every second will only hit the IP service ~6×/hour. Accuracy is city-level — a VPN or mobile carrier may place you nearby rather than exactly.
 
 If the IP lookup fails (no network, service blocked), `city` from config is used as a fallback.
 
